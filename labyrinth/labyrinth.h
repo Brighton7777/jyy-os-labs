@@ -1,5 +1,6 @@
 #include <stdbool.h>
 
+#define MAX_PATH_LENGTH 100
 #define MAX_ROWS 100
 #define MAX_COLS 100
 #define VERSION_INFO "Labyrinth Game"
@@ -18,7 +19,8 @@ typedef struct {
     int col;
 } Position;
 
-
+void printUsage();
+void printVersionInfo();
 bool isValidPlayer(char playerId);
 bool loadMap(Labyrinth *labyrinth, const char *filename);
 Position findPlayer(Labyrinth *labyrinth, char playerId);

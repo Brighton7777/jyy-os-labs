@@ -9,7 +9,87 @@
 
 int main(int argc, char *argv[]) {
     Labyrinth labyrinth = {0};
-    loadMap(&labyrinth, "./maps/map.txt");
+    char mapSrc[MAX_PATH_LENGTH] = "";
+    char playerId = 0;
+    char direction[10] = "";
+    int dirNumber = -2;
+    // printf("%d\n",argc);
+    // return 0;
+    for(int i = 1; i < argc; ++i) {
+        if(strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--map") == 0) {
+            // printf("Read -m or --map.\n");
+            if(i + 1 >= argc) {
+                perror("Missing map file path.");
+                return 1;
+            }
+            strcpy(mapSrc, argv[i + 1]);
+            ++i;
+        }
+        else if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--player") == 0) {
+            if(i + 1 >= argc) {
+                perror("Missing player ID.");
+                return 1;
+            }
+            // printf(strlen(argv[i + 1]));
+            if(strlen(argv[i + 1]) != 1 || argv[i + 1][0] < '0' || argv[i + 1][0] > '9') {
+                perror("Invaild player ID format.");
+                return 1;
+            }
+            playerId = argv[i + 1][0];
+            ++i;
+        }
+        else if(strcmp(argv[i], "--move") == 0) {
+            if(i + 1 >= argc) {
+                perror("Error: Missing move direction.");
+                return 1;
+            }
+            if((dirNumber = dir2num(argv[i + 1])) == -1) {
+                perror("Error: Invaild move direction.");
+                return 1;
+            }
+            strcpy(direction, argv[i + 1]);
+            ++i;
+        }
+        else if(strcmp(argv[i], "--version") == 0)
+        {
+            if(argc != 2) {
+                perror("Error: --version cannot be combined with other options.");
+                return 1;
+            }
+            printVersionInfo();
+            return 0;
+        }
+    }
+    // printf("%d\n", dirNumber);
+    if(strlen(mapSrc) == 0) {
+        perror("Error: Missing -m or --map.\n");
+        return 1;
+    }
+
+    loadMap(&labyrinth, mapSrc);
+    if(isConnected(&labyrinth) == false) {
+        perror("Error: the empty space is not connected in the map.");
+        return 1;
+    }
+
+    if(dirNumber == -2) { // No --move
+        showMap(&labyrinth);
+    }
+    else {
+        if(playerId == 0) {
+            perror("Error: Missing player ID.\n");
+            return 1;
+        }
+        Position playerPos = findPos(&labyrinth, playerId);
+        if(playerPos.row != -1 && playerPos.col != -1) {
+            movePlayer(&labyrinth, playerId, direction);
+        }
+        else { // Not found player
+            playerPos = findFirstEmptySpace(&labyrinth);
+            labyrinth.map[playerPos.row][playerPos.col] = playerId;
+        }
+        saveMap(&labyrinth, mapSrc);
+    }
     return 0;
 }
 
@@ -19,6 +99,11 @@ void printUsage() {
     printf("  labyrinth -m map.txt -p id\n");
     printf("  labyrinth --map map.txt --player id --move direction\n");
     printf("  labyrinth --version\n");
+}
+
+void printVersionInfo() {
+    printf("%s\n", VERSION_INFO);
+    return ;
 }
 
 bool isValidPlayer(char playerId) {
@@ -147,6 +232,7 @@ bool saveMap(Labyrinth *labyrinth, const char *filename) {
             return false;
         }
     }
+    close(fd);
     return true;
 }
 UnitTest(testSaveMap) {
@@ -169,7 +255,9 @@ int dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS]
     for(int i = 0; i < 4; ++i) {
         nextRow = row + ds[i].row;
         nextCol = col + ds[i].col;
-        if(isEmptySpace(labyrinth, nextRow, nextCol) && visited[nextRow][nextCol] == false) {
+        if(nextRow >= 0 && nextRow <= labyrinth->rows && 
+           nextCol >= 0 && nextCol <= labyrinth->cols &&
+           isEmptySpace(labyrinth, nextRow, nextCol) && visited[nextRow][nextCol] == false) {
             // printf("(%d, %d)\n", nextRow, nextCol);
             emptyCnt += dfs(labyrinth, nextRow, nextCol, visited);
         }
