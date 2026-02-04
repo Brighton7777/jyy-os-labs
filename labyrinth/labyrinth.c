@@ -98,7 +98,8 @@ UnitTest(testFindEmpty){
 
 
 bool isEmptySpace(Labyrinth *labyrinth, int row, int col) {
-    // TODO: Implement this function
+    if(labyrinth->map[row][col] == EMPTY_SPACE)
+        return true;
     return false;
 }
 
@@ -112,14 +113,41 @@ bool saveMap(Labyrinth *labyrinth, const char *filename) {
     return false;
 }
 
+// Helper direction array
+Position ds[4] = { {1, 0}, {0, 1}, {-1, 0}, {0, -1} };
 // Check if all empty spaces are connected using DFS
-void dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS]) {
-    // TODO: Implement this function
+int dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS]) {
+    visited[row][col] = true;
+    int nextRow, nextCol, emptyCnt = 1;
+    for(int i = 0; i < 4; ++i) {
+        nextRow = row + ds[i].row;
+        nextCol = col + ds[i].col;
+        if(isEmptySpace(labyrinth, nextRow, nextCol) && visited[nextRow][nextCol] == false) {
+            // printf("(%d, %d)\n", nextRow, nextCol);
+            emptyCnt += dfs(labyrinth, nextRow, nextCol, visited);
+        }
+    }
+    return emptyCnt;
 }
 
 bool isConnected(Labyrinth *labyrinth) {
-    // TODO: Implement this function
+    int emptyNumber = getEmptyNumber(labyrinth);
+    Position firstEmpty = findFirstEmptySpace(labyrinth);
+    printf("First Empty Position is (%d, %d)\n", firstEmpty.row, firstEmpty.col);
+    bool visited[MAX_ROWS][MAX_COLS] = {0};
+    if(dfs(labyrinth, firstEmpty.row, firstEmpty.col, visited) == emptyNumber)
+        return true;
     return false;
+}
+UnitTest(testIsConnected) {
+    Labyrinth l1 = {0}, l2 = {0};
+    loadMap(&l1, "./maps/map.txt");
+    loadMap(&l2, "./maps/test_is_connected.txt");
+    showMap(&l1);
+    Position firstEmpty = findFirstEmptySpace(&l1);
+    printf("First Empty Position is (%d, %d)\n", firstEmpty.row, firstEmpty.col);
+    assert(isConnected(&l1) == true);
+    assert(isConnected(&l2) == false);
 }
 
 // Some Helper Functions
@@ -142,4 +170,13 @@ Position findPos(const Labyrinth *const labyrinth, char c) {
         }
     }
     return pos;
+}
+
+int getEmptyNumber(const Labyrinth *const labyrinth) {
+    int emptyNumber = 0;
+    for(int i = 0; i <= labyrinth->rows; ++i)
+        for(int j = 0; j <= labyrinth->cols; ++j)
+            if(labyrinth->map[i][j] == EMPTY_SPACE)
+                ++emptyNumber;
+    return emptyNumber;
 }

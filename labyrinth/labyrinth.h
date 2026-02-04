@@ -31,3 +31,4 @@ bool isConnected(Labyrinth *labyrinth);
 // Helper Functions
 void showMap(const Labyrinth *const labyrinth);
 Position findPos(const Labyrinth *const labyrinth, char c);
+int getEmptyNumber(const Labyrinth *const labyrinth);
