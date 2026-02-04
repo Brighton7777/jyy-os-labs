@@ -4,6 +4,9 @@
 #define MAX_COLS 100
 #define VERSION_INFO "Labyrinth Game"
 
+#define WALL '#'
+#define EMPTY_SPACE '.'
+
 typedef struct {
     char map[MAX_ROWS][MAX_COLS];
     int rows;
@@ -24,3 +27,7 @@ bool isEmptySpace(Labyrinth *labyrinth, int row, int col);
 bool movePlayer(Labyrinth *labyrinth, char playerId, const char *direction);
 bool saveMap(Labyrinth *labyrinth, const char *filename);
 bool isConnected(Labyrinth *labyrinth);
+
+// Helper Functions
+void showMap(const Labyrinth *const labyrinth);
+Position findPos(const Labyrinth *const labyrinth, char c);

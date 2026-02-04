@@ -8,9 +8,7 @@
 #include "labyrinth.h"
 
 int main(int argc, char *argv[]) {
-    // TODO: Implement this function
-    Labyrinth labyrinth;
-    labyrinth.cols = labyrinth.rows = 0;
+    Labyrinth labyrinth = {0};
     loadMap(&labyrinth, "./maps/map.txt");
     return 0;
 }
@@ -42,17 +40,22 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
     // printf("%d\n", fd);
     char buf[MAX_COLS * MAX_ROWS];
     ssize_t n;
+    labyrinth->rows = 0;
+    labyrinth->cols = -1;
     while((n = read(fd, buf, sizeof(buf))) > 0) {
         for(int i = 0; i < n; ++i) {
-            labyrinth->map[labyrinth->rows][labyrinth->cols++] = buf[i];
-            if(buf[i] == '\n') {
-                labyrinth->map[labyrinth->rows][labyrinth->cols] = '\0';
+            if(labyrinth->map[labyrinth->rows][labyrinth->cols] == '\n') {
+                labyrinth->map[labyrinth->rows][labyrinth->cols + 1] = '\0';
                 ++labyrinth->rows, labyrinth->cols = 0;
-            }   
+            }
+            else {
+                ++labyrinth->cols;
+            } 
+            labyrinth->map[labyrinth->rows][labyrinth->cols] = buf[i];
         }
         // printf("%lld\n", n);
     }
-    --labyrinth->rows;
+    --labyrinth->cols;
     // printf("%d %d\n", labyrinth->rows, labyrinth->cols);
     // for(int i = 0; i < labyrinth->rows; ++i){
         // printf("%s", labyrinth->map[i]);
@@ -70,16 +73,29 @@ UnitTest(testLoadMap) {
     assert(loadMap(&labyrinth, "./maps/map.txt") == true);
 }
 Position findPlayer(Labyrinth *labyrinth, char playerId) {
-    // TODO: Implement this function
-    Position pos = {-1, -1};
-    return pos;
+    return findPos(labyrinth, playerId);
+}
+UnitTest(testFindPlayer){
+    Labyrinth l = {0};
+    loadMap(&l, "./maps/find_player.txt");
+    showMap(&l);
+    Position p1 = findPlayer(&l, '1');
+    Position p2 = findPlayer(&l, '2');
+    assert(p1.col == 1 && p1.row == 2);
+    assert(p2.col == -1 && p2.row == -1);
+}
+Position findFirstEmptySpace(Labyrinth *labyrinth) {
+    return findPos(labyrinth, '.');
+}
+UnitTest(testFindEmpty){
+    Labyrinth l = {0};
+    loadMap(&l, "./maps/map.txt");
+    showMap(&l);
+    Position emptyPos = findFirstEmptySpace(&l);
+    printf("(%d, %d)\n", emptyPos.row, emptyPos.col);
+    assert(emptyPos.col == 2 && emptyPos.row == 1);
 }
 
-Position findFirstEmptySpace(Labyrinth *labyrinth) {
-    // TODO: Implement this function
-    Position pos = {-1, -1};
-    return pos;
-}
 
 bool isEmptySpace(Labyrinth *labyrinth, int row, int col) {
     // TODO: Implement this function
@@ -104,4 +120,26 @@ void dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS
 bool isConnected(Labyrinth *labyrinth) {
     // TODO: Implement this function
     return false;
+}
+
+// Some Helper Functions
+void showMap(const Labyrinth *const labyrinth) {
+    printf("(%d, %d)\n", labyrinth->rows, labyrinth->cols);
+    for(int i = 0; i <= labyrinth->rows; ++i) {
+        printf("%s", labyrinth->map[i]);
+    }
+}
+
+Position findPos(const Labyrinth *const labyrinth, char c) {
+    Position pos = {-1, -1};
+    for(int i = 0; i <= labyrinth->rows; ++i) {
+        for(int j = 0; j <= labyrinth->cols; ++j) {
+            if(labyrinth->map[i][j] == c) {
+                pos.row = i;
+                pos.col = j;
+                return pos;
+            }
+        }
+    }
+    return pos;
 }
