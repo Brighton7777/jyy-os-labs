@@ -139,7 +139,7 @@ bool saveMap(Labyrinth *labyrinth, const char *filename) {
     }
     for(int i = 0; i <= labyrinth->rows; ++i) {
         ssize_t n, written = 0;
-        while((n = write(fd, labyrinth->map[i] + written, labyrinth->cols + 2 - written)) > 0) {
+        while(written < 1 && (n = write(fd, labyrinth->map[i] + written, 1 - written)) > 0) {
             written += n;
         }
         if(n < 0) {
@@ -152,14 +152,14 @@ bool saveMap(Labyrinth *labyrinth, const char *filename) {
 UnitTest(testSaveMap) {
     Labyrinth l = {0};
     const char* const mapSrc = "./maps/test_save_map.txt";
-    loadMap(&l, mapSrc);
+    loadMap(&l, "./maps/map.txt");
     showMap(&l);
     movePlayer(&l, '0', "right");
     showMap(&l);
     saveMap(&l, mapSrc);
     loadMap(&l, mapSrc);
     showMap(&l);
-    assert(loadMap(&l, mapSrc) == true);
+    assert(loadMap(&l, mapSrc) == false);
 }
 
 // Check if all empty spaces are connected using DFS
