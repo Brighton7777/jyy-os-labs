@@ -32,3 +32,4 @@ bool isConnected(Labyrinth *labyrinth);
 void showMap(const Labyrinth *const labyrinth);
 Position findPos(const Labyrinth *const labyrinth, char c);
 int getEmptyNumber(const Labyrinth *const labyrinth);
+int dir2num(const char* const direction);

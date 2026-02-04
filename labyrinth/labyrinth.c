@@ -103,18 +103,37 @@ bool isEmptySpace(Labyrinth *labyrinth, int row, int col) {
     return false;
 }
 
+// Helper direction array
+Position ds[4] = { {1, 0}, {-1, 0}, {0, -1}, {0, 1} };
 bool movePlayer(Labyrinth *labyrinth, char playerId, const char *direction) {
-    // TODO: Implement this function
-    return false;
-}
+    Position playerPos = findPos(labyrinth, playerId);
+    int dirNumber = dir2num(direction);
+    if(dir2num(direction) == -1) {
+        perror("Wrong direcion.");
+        return false;
+    }
 
+    int nextRow = playerPos.row + ds[dirNumber].row;
+    int nextCol = playerPos.col + ds[dirNumber].col;
+    if(isEmptySpace(labyrinth, nextRow, nextCol) == false) {
+        perror("Object position is not empty space.");
+        return false;
+    }
+    labyrinth->map[playerPos.row][playerPos.col] = EMPTY_SPACE; 
+    labyrinth->map[nextRow][nextCol] = playerId;
+    return true;
+}
+UnitTest(testMovePlayer) {
+    Labyrinth l = {0};
+    loadMap(&l, "./maps/map.txt");
+    assert(movePlayer(&l, '0', "left") == false);
+    assert(movePlayer(&l, '0', "right") == true);
+}
 bool saveMap(Labyrinth *labyrinth, const char *filename) {
     // TODO: Implement this function
     return false;
 }
 
-// Helper direction array
-Position ds[4] = { {1, 0}, {0, 1}, {-1, 0}, {0, -1} };
 // Check if all empty spaces are connected using DFS
 int dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS]) {
     visited[row][col] = true;
@@ -179,4 +198,15 @@ int getEmptyNumber(const Labyrinth *const labyrinth) {
             if(labyrinth->map[i][j] == EMPTY_SPACE)
                 ++emptyNumber;
     return emptyNumber;
+}
+int dir2num(const char* const direction) {
+    if(strcmp(direction, "up") == 0)
+        return 0;
+    else if(strcmp(direction, "down") == 0)
+        return 1;
+    else if(strcmp(direction, "left") == 0)
+        return 2;
+    else if(strcmp(direction, "right") == 0)
+        return 3;
+    return -1;
 }
