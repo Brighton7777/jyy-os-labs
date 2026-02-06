@@ -35,15 +35,15 @@ typedef struct dirent Dirent;
 int getAllPids(int *pids);
 int getPidIdx(int pid, int* pids, int pids_cnt);
 void printVersionInfo();
-void initProc(int pid, Proc* proc);
+void initProc(int pid, Proc* proc, int* pids, int pids_cnt);
 void parseOptions(Options *options, const int argc, char** argv);
-void getNextWord(const char* src, int idx, char* dest);
 void getStatusPath(char* status_path, int pid);
-int getChildren(int ppid);
-void showTree(Options options);
+void showTree(int current_idx, bool* visited, int indent_level, Options options, Proc* procs);
+void addChild(int child_pid, Proc* procs, int* pids, int pids_cnt);
+void parseProcStatus(const char* status, int length, Proc* proc);
 
 // Helper functions
 bool isNumber(const char* dir_name);
 int str2num(const char* dir_name);
 int readAll(const char* src, char* dest);
-void praseProcStatus(const char* status, int length, Proc* proc);
+void getNextWord(const char* src, int idx, char* dest);

@@ -16,8 +16,24 @@ int main(int argc, char *argv[]) {
     int pids[MAX_PROC_NUMBER];
     int pids_cnt = 0;
     pids_cnt = getAllPids(pids);
+    if(pids_cnt == -1) {
+        perror("Error: get all pids failed.\n");
+        return 1;
+    }
 
-    
+    Proc procs[MAX_PROC_NUMBER];
+    for(int i = 0; i <= pids_cnt; ++i) {
+        initProc(pids[i], &procs[i], pids, pids_cnt);
+        addChild(i, procs, pids, pids_cnt);
+    }
+
+    bool visited[MAX_PROC_NUMBER] = {0};
+    for(int i = 0; i <= pids_cnt; ++i) {
+        if(procs[i].ppid == 0 && visited[i] == false) {
+            showTree(i, visited, 0, options, procs);
+        }
+    }
+
     return 0;
 }
 
@@ -41,6 +57,10 @@ void parseOptions(Options *options, const int argc, char** argv) {
             }
             printVersionInfo();
             exit(0);
+        }
+        else { // invaild option
+            fprintf(stderr, "Error: invaild option %s.\n", argv[i]);
+            exit(1);
         }
     }
 }
@@ -97,7 +117,7 @@ void getStatusPath(char* status_path, int pid) {
     status_path[idx] = '\0';
     // printf("%s\n", status_path);
     char sta[] = "/status";
-    printf("%s\n", sta);
+    // printf("%s\n", sta);
     for(int i = 0; i <= 6; ++i) {
         status_path[idx + i] = sta[i];
     }
@@ -111,7 +131,7 @@ UnitTest(testGetStatusPath) {
     assert(strcmp(sp, "/proc/12345/status") == 0);
 }
 
-void praseProcStatus(const char* status, int sta_length, Proc* proc) {
+void parseProcStatus(const char* status, int sta_length, Proc* proc) {
     bool name_find = false, ppid_find = false;
     for(int i = 0; i < sta_length; ++i) {
         if(i + 4 >= sta_length)
@@ -121,44 +141,72 @@ void praseProcStatus(const char* status, int sta_length, Proc* proc) {
             // printf("%d\n", i);
             getNextWord(status, i + 5, proc->name);
             name_find = true;
-            printf("%s\n", proc->name);
+            // printf("%s\n", proc->name);
         }
         if(status[i] == 'P' && status[i + 1] == 'P' && status[i + 2] == 'i' && 
            status[i + 3] == 'd' && status[i + 4] == ':') {
-            char* ppid[MAX_PID_DIGITS];
+            char ppid[MAX_PID_DIGITS];
             getNextWord(status, i + 5, ppid);
             proc->ppid = str2num(ppid);
             ppid_find = true;
-            printf("%d\n", proc->ppid);
+            // printf("%d\n", proc->ppid);
         }
         if(name_find == true && ppid_find == true)
             break;
     }
 }
-UnitTest(testPraseProcStatus) {
+UnitTest(testParseProcStatus) {
     char status[] = "Name: test\nPPid: 12345";
     int sta_length = strlen(status);
-    printf("%d\n", sta_length);
+    // printf("%d\n", sta_length);
     Proc proc = {0};
-    praseProcStatus(status, sta_length, &proc);
+    parseProcStatus(status, sta_length, &proc);
     assert(strcmp(proc.name, "test") == 0);
     assert(proc.ppid == 12345);
 }
 
-void initProc(int pid, Proc* proc) {
+void addChild(int child_idx, Proc *procs, int* pids, int pids_cnt) {
+    int ppid = procs[child_idx].ppid;
+    if(ppid == 0) // root proc
+        return ;
+    int parent_idx = getPidIdx(ppid, pids, pids_cnt);
+    procs[parent_idx].children[procs[parent_idx].child_cnt++] = child_idx;
+    procs[child_idx].parent_idx = parent_idx;
+}
+void initProc(int pid, Proc* proc, int* pids, int pids_cnt) {
     proc->pid = pid;
     char status_path[MAX_PATH_LENGTH];
     getStatusPath(status_path, pid);
     char status[MAX_STATUS_SIZE];
     int sta_length = readAll(status_path, status);
-    praseProcStatus(status, sta_length, proc);
+    parseProcStatus(status, sta_length, proc);
 }
 UnitTest(testInitProc) {
     Proc proc = {0};
-    initProc(1, &proc);
+    int pids[MAX_PROC_NUMBER];
+    int pids_cnt = 0;
+    initProc(1, &proc, pids, pids_cnt);
     // printf("%s\n", proc.name);
     assert(strcmp(proc.name, "systemd") == 0);
     assert(proc.ppid == 0);
+}
+
+void showTree(int current_idx, bool* visited, int indent_level, Options options, Proc* procs) {
+    visited[current_idx] = true;
+    
+    for(int i = 0; i < indent_level; ++i)
+        printf("  ");
+    
+    if(options.show_pid == true)
+        printf("%s(%d)\n", procs[current_idx].name, procs[current_idx].pid);
+    else
+        printf("%s\n", procs[current_idx].name);
+    
+    for(int i = 0; i < procs[current_idx].child_cnt; ++i) {
+        int child_idx = procs[current_idx].children[i];
+        if(visited[child_idx] == false)
+            showTree(child_idx, visited, indent_level + 1, options, procs);
+    }
 }
 
 // Helper functions
@@ -217,7 +265,6 @@ UnitTest(testReadAll) {
     int dest_length = readAll(src, dest);
     printf("%d\n", dest_length);
     int cnt = 0;
-    char* dest_idx = dest;
     for(int i = 0; i < dest_length; ++i) {
         putchar(dest[i]);
         ++cnt;
